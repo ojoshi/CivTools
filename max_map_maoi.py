@@ -62,33 +62,52 @@ def classifyTile(board, updated, x, y, ring):
 def updateTileDef(board):
     updated = [row[:] for row in board[:]]
     for ring in range(4, 0, -1):
-        for tile in range(ring): # top side
-            x = 4 - ring
-            y = 4 + tile
-            classifyTile(board, updated, x, y, ring)
-        for tile in range(ring): # top right side
-            x = tile + (4 - ring)
-            y = 4 + ring
-            classifyTile(board, updated, x, y, ring)
-        for tile in range(ring): # bottom right side
-            x = 4 + tile
-            y = (4 + ring) - tile
-            classifyTile(board, updated, x, y, ring)
-        for tile in range(ring): # bottom side
-            x = 4 + ring
-            y = 4 - tile
-            classifyTile(board, updated, x, y, ring)
-        for tile in range(ring): # bottom left side
-            x = (4 + ring) - tile
-            y = 4 - ring
-            classifyTile(board, updated, x, y, ring)
-        for tile in range(ring): # top left side
-            x = 4 - tile
-            y = (4 - ring) + tile
-            classifyTile(board, updated, x, y, ring)
+        for i in range(2): # run twice to solve issues related to unknown next tile classification
+            for tile in range(ring): # top side
+                x = 4 - ring
+                y = 4 + tile
+                classifyTile(board, updated, x, y, ring)
+            for tile in range(ring): # top right side
+                x = tile + (4 - ring)
+                y = 4 + ring
+                classifyTile(board, updated, x, y, ring)
+            for tile in range(ring): # bottom right side
+                x = 4 + tile
+                y = (4 + ring) - tile
+                classifyTile(board, updated, x, y, ring)
+            for tile in range(ring): # bottom side
+                x = 4 + ring
+                y = 4 - tile
+                classifyTile(board, updated, x, y, ring)
+            for tile in range(ring): # bottom left side
+                x = (4 + ring) - tile
+                y = 4 - ring
+                classifyTile(board, updated, x, y, ring)
+            for tile in range(ring): # top left side
+                x = 4 - tile
+                y = (4 - ring) + tile
+                classifyTile(board, updated, x, y, ring)
     return updated
 
 def scoreMap(updated):
+    # scored = [row[:] for row in updated[:]] 
+    total = 0
+    for x in range(1,8):
+        ymin = 1
+        ymax = 8
+        if x <= 4:
+            ymin = 5 - x # ymax is 8
+        else:
+            ymax = 12 - x # ymin is 1
+        for y in range(ymin, ymax): 
+            if updated[x][y] == 'M': # land is moai
+                score = scoreNeighbor(updated, x, y)
+                # scored[x][y] = score
+                total += score
+    # printBoard(scored)
+    return total
+    
+def printScoredBoard(updated):
     scored = [row[:] for row in updated[:]] 
     total = 0
     for x in range(1,8):
@@ -101,10 +120,8 @@ def scoreMap(updated):
         for y in range(ymin, ymax): 
             if updated[x][y] == 'M': # land is moai
                 score = scoreNeighbor(updated, x, y)
-                scored[x][y] = score
-                total += score
+                scored[x][y] = str(score)
     printBoard(scored)
-    return total
 
 # Build list of tuples that need to be flipped
 tuples = []
@@ -123,31 +140,32 @@ tuples.remove((4,4))
 winningscore = 0
 winner = [[]]
 
-for iter in range(100):
+for iter in range(10000):
     # Initialize empty nodes
-    # nodes = [[random.randint(0,1) for i in range(0,9)] for i in range(0,9)] # random
+    nodes = [[random.randint(0,1) for i in range(0,9)] for i in range(0,9)] # random
     # nodes = [[0 for i in range(0,9)] for i in range(0,9)] # all water
     # nodes = [[1 for i in range(0,9)] for i in range(0,9)] # all moai
-    nodes = [
-        [0,0,0,0,    1, 0, 1, 1, 1], 
-        [0,0,0,   1, 1, 1, 1, 1, 1],
-        [0,0,  1, 1, 1, 1, 0, 1, 1],
-        [0, 1, 1, 0, 1, 1, 1, 1, 0],
-        [1, 1, 1, 1, 1, 1, 1, 1, 1],
-        [0, 1, 1, 1, 1, 0, 1, 1, 0],
-        [1, 1, 0, 1, 1, 1, 1,  0,0],
-        [1, 1, 0, 1, 1, 1,   0,0,0],
-        [1, 1, 0, 0, 1,    0,0,0,0]
-    ]
+    # nodes = [
+    #     [0,0,0,0,    1, 0, 1, 1, 1], 
+    #     [0,0,0,   1, 0, 1, 1, 0, 0],
+    #     [0,0,  1, 1, 0, 1, 0, 1, 1],
+    #     [0, 0, 1, 1, 1, 1, 1, 1, 1],
+    #     [1, 0, 0, 1, 1, 1, 0, 0, 1],
+    #     [1, 1, 1, 1, 1, 1, 1, 0, 0],
+    #     [1, 1, 0, 1, 0, 1, 1,  0,0],
+    #     [0, 0, 1, 1, 0, 1,   0,0,0],
+    #     [1, 1, 1, 0, 1,    0,0,0,0]
+    # ]
     nodes[4][4] = 'H' # H for home tile
+   
+    # Test a single board
+    # updated = updateTileDef(nodes)
+    # printBoard(updated)
+    # print "Score", scoreMap(updated)
+    # printScoredBoard(updated)
+    # exit()
     
-    updated = updateTileDef(nodes)
-    total = scoreMap(updated)
-    print "Score", total
-    printBoard(updated)
-    exit()
-    
-    # Iterate over states n times
+    # Iterate over options until score cannot be improved
     maxscore = 0
     while True: #for iter in range(0, 100):
         # Sweep all nodes in current state 
@@ -161,11 +179,11 @@ for iter in range(100):
             netscore = 0
             
             # Score the current map
-            updated = updateTileDef(nodes)
+            updated = updateTileDef(cur)
             netscore = scoreMap(updated)
             
-            # print "Position", x, y, "-", netscore
-            # printBoard(cur)
+            # print "Position", tup[0], tup[1], "-", netscore
+            # printScoredBoard(updated)
 
             # If this is current high score, save map
             if netscore >= tempscore:
@@ -186,18 +204,17 @@ for iter in range(100):
         winningscore = maxscore
         winner = nodes
         print "Winner", iter, "-", maxscore
-        # printBoard(winner)
+        formatted = updateTileDef(winner)
+        printBoard(formatted)
+        printScoredBoard(formatted)
         
     # Progress updated
     if iter % 100 == 0 and iter != 0:
         print "Chunk complete -", iter/100
 
 # Return winning map
-printBoard(winner)
-
-# Build scoring map 
-#---------------
-#---------------
-                
-print "Score:", roller
-printBoard(scored)
+updated = updateTileDef(winner)
+netscore = scoreMap(updated)
+print "Score:", netscore
+printBoard(updated)
+printScoredBoard(updated)
