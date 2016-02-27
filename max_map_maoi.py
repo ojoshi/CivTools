@@ -2,31 +2,63 @@ import random
 
 # Reads data in a board object and prints it to screen
 def printBoard(board):
-    print "    ", board[0][4:9], "    "
-    print "   " , board[1][3:9], "   "
-    print "  "  , board[2][2:9], "  "
-    print " "   , board[3][1:9], " "
+    print "         ", board[0][4:9], "    "
+    print "      " , board[1][3:9], "   "
+    print "    "  , board[2][2:9], "  "
+    print "  "   , board[3][1:9], " "
     print         board[4]
-    print " "   , board[5][0:8], " "
-    print "  "  , board[6][0:7], "  "
-    print "   " , board[7][0:6], "   "
-    print "    ", board[8][0:5], "    " 
+    print "  "   , board[5][0:8], " "
+    print "    "  , board[6][0:7], "  "
+    print "      " , board[7][0:6], "   "
+    print "         ", board[8][0:5], "    " 
     print ""
 
-def checkNeighbor(board, updated, x, y):
-    if(updated[x - 1][y] == 'C' or updated[x + 1][y] == 'C' or updated[x][y - 1] == 'C' or updated[x][y + 1] == 'C' or updated[x - 1][y + 1] == 'C' or updated[x + 1][y - 1] == 'C'):
-        return 'C'
+# Check neighboring tiles to see if they are coast and returns appropriate classification of water
+def checkNeighbor(updated, x, y):
+    if(updated[x - 1][y] != 'C' and updated[x + 1][y] != 'C' and updated[x][y - 1] != 'C' and updated[x][y + 1] != 'C' and updated[x - 1][y + 1] != 'C' and updated[x + 1][y - 1] != 'C'):
+        return False
     else:
-        return 'L'
+        return True
 
+# Returns a score for position x,y by checking neighboring tiles
+def scoreNeighbor(updated, x, y):
+    if(updated[x - 1][y] != 'C' and updated[x + 1][y] != 'C' and updated[x][y - 1] != 'C' and updated[x][y + 1] != 'C' and updated[x - 1][y + 1] != 'C' and updated[x + 1][y - 1] != 'C'):
+        return 0
+    count = 0
+    if(updated[x - 1][y] == 'M'):
+        count += 1
+    if(updated[x + 1][y] == 'M'):
+        count += 1
+    if(updated[x][y - 1] == 'M'):
+        count += 1
+    if(updated[x][y + 1] == 'M'):
+        count += 1
+    if(updated[x - 1][y + 1] == 'M'):
+        count += 1
+    if(updated[x + 1][y - 1] == 'M'):
+        count += 1
+    return count + 1 # additional +1 for the tile itself
+
+# Classifies tiles (water and moai)
 def classifyTile(board, updated, x, y, ring):
-    if(board[x][y] == 1):
-        updated[x][y] = 'M'
-    elif(ring == 4): # board[x][y] == 0 so tile is water
-        updated[x][y] = 'C'
-    else: # tile is water and not in outer so check if coast
-        updated[x][y] = checkNeighbor(board, updated, x, y)
+    if(ring == 4):
+        if(board[x][y] == 1): # tile is land
+            updated[x][y] = 'M'
+        else: # board[x][y] == 0 so tile is water
+            updated[x][y] = 'C'
+    else: # tile is not in outer ring
+        if(board[x][y] == 1):
+            if(checkNeighbor(updated, x, y)): # contains neighboring coast
+                updated[x][y] = 'M'
+            else:
+                updated[x][y] = 'B' # B for blank
+        else:
+            if(checkNeighbor(updated, x, y)): # contains neighboring coast
+                updated[x][y] = 'C'
+            else:
+                updated[x][y] = 'L' # Lake since no neighbors
 
+# Checks board starting from ring 4 in clockwise fashion to classify tiles
 def updateTileDef(board):
     updated = [row[:] for row in board[:]]
     for ring in range(4, 0, -1):
@@ -56,6 +88,24 @@ def updateTileDef(board):
             classifyTile(board, updated, x, y, ring)
     return updated
 
+def scoreMap(updated):
+    scored = [row[:] for row in updated[:]] 
+    total = 0
+    for x in range(1,8):
+        ymin = 1
+        ymax = 8
+        if x <= 4:
+            ymin = 5 - x # ymax is 8
+        else:
+            ymax = 12 - x # ymin is 1
+        for y in range(ymin, ymax): 
+            if updated[x][y] == 'M': # land is moai
+                score = scoreNeighbor(updated, x, y)
+                scored[x][y] = score
+                total += score
+    printBoard(scored)
+    return total
+
 # Build list of tuples that need to be flipped
 tuples = []
 for a in range(0,9):
@@ -77,7 +127,7 @@ for iter in range(100):
     # Initialize empty nodes
     # nodes = [[random.randint(0,1) for i in range(0,9)] for i in range(0,9)] # random
     # nodes = [[0 for i in range(0,9)] for i in range(0,9)] # all water
-    # nodes = [[1 for i in range(0,9)] for i in range(0,9)] # all maois
+    # nodes = [[1 for i in range(0,9)] for i in range(0,9)] # all moai
     nodes = [
         [0,0,0,0,    1, 0, 1, 1, 1], 
         [0,0,0,   1, 1, 1, 1, 1, 1],
@@ -90,8 +140,10 @@ for iter in range(100):
         [1, 1, 0, 0, 1,    0,0,0,0]
     ]
     nodes[4][4] = 'H' # H for home tile
-    printBoard(nodes)
+    
     updated = updateTileDef(nodes)
+    total = scoreMap(updated)
+    print "Score", total
     printBoard(updated)
     exit()
     
@@ -109,8 +161,8 @@ for iter in range(100):
             netscore = 0
             
             # Score the current map
-            #---------------
-            #---------------
+            updated = updateTileDef(nodes)
+            netscore = scoreMap(updated)
             
             # print "Position", x, y, "-", netscore
             # printBoard(cur)
