@@ -11,6 +11,50 @@ def printBoard(board):
     print "  "  , board[6][0:7], "  "
     print "   " , board[7][0:6], "   "
     print "    ", board[8][0:5], "    " 
+    print ""
+
+def checkNeighbor(board, updated, x, y):
+    if(updated[x - 1][y] == 'C' or updated[x + 1][y] == 'C' or updated[x][y - 1] == 'C' or updated[x][y + 1] == 'C' or updated[x - 1][y + 1] == 'C' or updated[x + 1][y - 1] == 'C'):
+        return 'C'
+    else:
+        return 'L'
+
+def classifyTile(board, updated, x, y, ring):
+    if(board[x][y] == 1):
+        updated[x][y] = 'M'
+    elif(ring == 4): # board[x][y] == 0 so tile is water
+        updated[x][y] = 'C'
+    else: # tile is water and not in outer so check if coast
+        updated[x][y] = checkNeighbor(board, updated, x, y)
+
+def updateTileDef(board):
+    updated = [row[:] for row in board[:]]
+    for ring in range(4, 0, -1):
+        for tile in range(ring): # top side
+            x = 4 - ring
+            y = 4 + tile
+            classifyTile(board, updated, x, y, ring)
+        for tile in range(ring): # top right side
+            x = tile + (4 - ring)
+            y = 4 + ring
+            classifyTile(board, updated, x, y, ring)
+        for tile in range(ring): # bottom right side
+            x = 4 + tile
+            y = (4 + ring) - tile
+            classifyTile(board, updated, x, y, ring)
+        for tile in range(ring): # bottom side
+            x = 4 + ring
+            y = 4 - tile
+            classifyTile(board, updated, x, y, ring)
+        for tile in range(ring): # bottom left side
+            x = (4 + ring) - tile
+            y = 4 - ring
+            classifyTile(board, updated, x, y, ring)
+        for tile in range(ring): # top left side
+            x = 4 - tile
+            y = (4 - ring) + tile
+            classifyTile(board, updated, x, y, ring)
+    return updated
 
 # Build list of tuples that need to be flipped
 tuples = []
@@ -31,21 +75,25 @@ winner = [[]]
 
 for iter in range(100):
     # Initialize empty nodes
-    nodes = [[random.randint(0,1) for i in range(0,9)] for i in range(0,9)] # random
-    # nodes = [[0 for i in range(0,9)] for i in range(0,9)] # all farms
-    # nodes = [[1 for i in range(0,9)] for i in range(0,9)] # all mountains
-    # nodes = [
-    #     [0,0,0,0,       1, 0, 1, 1, 1], 
-    #     [0,0,0,      1, 1, 1, 1, 1, 1],
-    #     [0,0,     1, 1, 1, 1, 0, 1, 1],
-    #     [0,    1, 1, 0, 1, 1, 1, 1, 0],
-    #     [1, 1, 1, 1, 1, 1, 1, 1, 1   ],
-    #     [0, 1, 1, 1, 1, 0, 1, 1,    0],
-    #     [1, 1, 0, 1, 1, 1, 1,     0,0],
-    #     [1, 1, 1, 1, 1, 1,      0,0,0],
-    #     [1, 1, 1, 0, 1,       0,0,0,0]
-    # ]
-    nodes[4][4] = 0
+    # nodes = [[random.randint(0,1) for i in range(0,9)] for i in range(0,9)] # random
+    # nodes = [[0 for i in range(0,9)] for i in range(0,9)] # all water
+    # nodes = [[1 for i in range(0,9)] for i in range(0,9)] # all maois
+    nodes = [
+        [0,0,0,0,    1, 0, 1, 1, 1], 
+        [0,0,0,   1, 1, 1, 1, 1, 1],
+        [0,0,  1, 1, 1, 1, 0, 1, 1],
+        [0, 1, 1, 0, 1, 1, 1, 1, 0],
+        [1, 1, 1, 1, 1, 1, 1, 1, 1],
+        [0, 1, 1, 1, 1, 0, 1, 1, 0],
+        [1, 1, 0, 1, 1, 1, 1,  0,0],
+        [1, 1, 0, 1, 1, 1,   0,0,0],
+        [1, 1, 0, 0, 1,    0,0,0,0]
+    ]
+    nodes[4][4] = 'H' # H for home tile
+    printBoard(nodes)
+    updated = updateTileDef(nodes)
+    printBoard(updated)
+    exit()
     
     # Iterate over states n times
     maxscore = 0
