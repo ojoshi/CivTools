@@ -24,6 +24,7 @@ for a in range(0,9):
     for b in range(bmin, bmax):
         tuples.append((a, b))
 tuples.remove((4,4))
+tuples.remove((0,4)) # remove top left corner so road is accessible
 
 # Run 10,000 different searches
 winningscore = 0
@@ -46,6 +47,7 @@ for iter in range(100):
     #     [1, 1, 1, 0, 1,       0,0,0,0]
     # ]
     nodes[4][4] = 0
+    nodes[0][4] = 0  # remove top left corner so road is accessible
     
     # Iterate over states n times
     maxscore = 0
